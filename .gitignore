@@ -1,4 +1,4 @@
 node_modules
 .vs
 config.json
-yt.json
+commands/yt.json
