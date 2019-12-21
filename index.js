@@ -7,6 +7,7 @@ client.commands = new Discord.Collection();
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 client.games = new Map(); 
 
+// for each exported module in commands
 for (const file of commandFiles) {
   const command = require(`./commands/${file}`);
   // set a new item in the Collection
@@ -24,7 +25,9 @@ client.once('disconnect', () => {
   console.log('Disconnect!');
 });
 
+// discord message listener
 client.on('message', async message => {
+  // if the message doesn't start with prefix or is from the bot, ignore it
   if (!message.content.startsWith(prefix) || message.author.bot) return;
   const args = message.content.slice(prefix.length).split(/ +/);
   const commandName = args.shift().toLowerCase();
