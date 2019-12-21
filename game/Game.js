@@ -6,7 +6,7 @@ module.exports = class Game {
     this.guild = message.guild;
     this.host = message.author.id;
     this.players = new Map();
-    this.players.set(this.host, new Player());
+    this.players.set(this.host, new Player(message.author.username));
     this.gameChannel = message.channel;
     this.voiceChannel = message.member.voiceChannel;
     this.connection = null;
@@ -31,7 +31,7 @@ module.exports = class Game {
 
       try {
         this.connection = await this.voiceChannel.join();
-        this.startGame(games, this.songs[0]);
+        this.startGame(message, this.songs[0]);
       } catch (err) {
         console.log(err);
         games.delete(message.guild.id);
@@ -44,16 +44,16 @@ module.exports = class Game {
     }
   }
 
-  async startGame(games, song) {
+  async startGame(message, song) {
     if (!song) {
-      return this.endGame(games);
+      return this.endGame(message);
     }
 
     const dispatcher = this.connection.playStream(ytdl(song.url));
     dispatcher.on('end', () => {
       console.log('Song ended!');
       this.songs.shift();
-      this.startGame(games, this.songs[0]);
+      this.startGame(message, this.songs[0]);
     });
     dispatcher.on('error', error => {
       console.log(error);
@@ -62,13 +62,12 @@ module.exports = class Game {
     dispatcher.setVolumeLogarithmic(this.volume / 5);
   }
 
-  async endGame(games) {
-    var exists = true;
+  async endGame(message) {
+    const games = message.client.games;
     this.voiceChannel.leave();
-    exists = games.delete(this.guild.id);
-    if (!exists) {
-      return message.channel.send('There isn\'t an ongoing game to end!');
-    }
+    let winner = this.getWinner();
+    message.channel.send(`Winner: ${winner.user}, Score: ${winner.score}`);
+    games.delete(this.guild.id);
   }
 
   givePoints(player) {
@@ -77,22 +76,33 @@ module.exports = class Game {
 
   getScore(message) {
     // get mentioned user
-    const member = message.mentions.first();
+    const member = message.mentions.members.first();
     const user = member.user;
     const player = this.players.get(user.id);
 
     // send a message of the user's score if they joined the game
     if (player) {
-      message.channel.send('${user.username}\ score is ' + player.score);
+      message.channel.send(`${user.username} score is ` + player.score);
     }
     else {
-      return message.channel.send('${user.username} is not playing this game.');
+      return message.channel.send(`${user.username} is not playing this game.`);
     }
   }
 
   // adds author of message to Game as a Player
   addPlayer(message) {
-    this.players.set(message.author.id, new Player());
+    this.players.set(message.author.id, new Player(message.author.username));
     message.react('👍');
+  }
+
+  getWinner() {
+    let winner = this.players.get(this.host);
+    for (const player of this.players) {
+      if (player.score < winner.score) {
+        winner = player;
+      }
+    }
+
+    return winner;
   }
 }

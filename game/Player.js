@@ -1,9 +1,10 @@
 module.exports = class Player {
-    constructor() {
+    constructor(user) {
         this.score = 0;
+        this.user = user;
     }
 
     increaseScore() {
-        score += 5;
+        this.score += 5;
     }
 }

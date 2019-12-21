@@ -9,6 +9,10 @@ module.exports = {
         const games = message.client.games;
         const serverGame = games.get(message.guild.id);
 
+        if (!serverGame) {
+            return message.channel.send('There is no ongoing game.');
+        }
+
         const player = serverGame.players.get(message.author.id);
         if (!player) {
             return message.reply('You must join a game before guessing.');
@@ -19,6 +23,8 @@ module.exports = {
 
         if (this.checkGuess(guess, title)) {
             serverGame.givePoints(player);
+            message.reply('Correct! +5 Points.');
+            serverGame.connection.dispatcher.end();
         }
         else {
             return;
